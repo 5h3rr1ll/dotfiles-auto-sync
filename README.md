@@ -11,14 +11,14 @@
 
 This system uses macOS LaunchAgent to watch your dotfiles and automatically commit/push them to a git repository managed by [yadm](https://yadm.io/) (Yet Another Dotfiles Manager).
 
-**No more forgetting to commit your dotfiles!** Changes are automatically backed up when files are modified, plus hourly as a safety net.
+**No more forgetting to commit your dotfiles!** Changes are automatically backed up when files are modified, plus daily as a safety net.
 
 ## Why Use This?
 
 ✅ **Truly Automatic** - Set it and forget it. Your dotfiles are continuously backed up
 ✅ **Never Lose Configuration** - Every change is versioned in git
 ✅ **Instant Sync** - File changes trigger immediate backup
-✅ **Safety Net** - Hourly backups even if file watch misses something
+✅ **Safety Net** - Daily backups even if file watch misses something
 ✅ **Zero Maintenance** - Runs silently in the background via LaunchAgent
 
 ## Quick Start
