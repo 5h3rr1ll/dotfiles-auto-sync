@@ -2,8 +2,6 @@
 # Test runner script for dotfiles-auto-sync
 # Usage: ./run-tests.sh [unit|integration|all]
 
-set -e
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_DIR="$SCRIPT_DIR/tests"
 
@@ -32,10 +30,10 @@ failed=0
 if [[ "$TEST_TYPE" == "unit" ]] || [[ "$TEST_TYPE" == "all" ]]; then
     echo ""
     echo -e "${BLUE}📋 Running unit tests...${NC}"
-    if bats "$TEST_DIR/unit"/*.bats; then
-        echo -e "${GREEN}✓ Unit tests passed${NC}"
-    else
+    if ! bats "$TEST_DIR/unit"/*.bats; then
         failed=$((failed + 1))
+    else
+        echo -e "${GREEN}✓ Unit tests passed${NC}"
     fi
 fi
 
@@ -43,23 +41,23 @@ fi
 if [[ "$TEST_TYPE" == "integration" ]] || [[ "$TEST_TYPE" == "all" ]]; then
     echo ""
     echo -e "${BLUE}📋 Running integration tests...${NC}"
-    if bats "$TEST_DIR/integration"/*.bats; then
-        echo -e "${GREEN}✓ Integration tests passed${NC}"
-    else
+    if ! bats "$TEST_DIR/integration"/*.bats; then
         failed=$((failed + 1))
+    else
+        echo -e "${GREEN}✓ Integration tests passed${NC}"
     fi
 fi
 
 # Check shell script syntax
 echo ""
 echo -e "${BLUE}📋 Checking shell script syntax...${NC}"
-syntax_ok=true
 for script in lib/*.sh dotfiles-auto-sync; do
     if bash -n "$script" 2>/dev/null; then
         echo -e "${GREEN}✓${NC} $script"
     else
-        echo -e "${RED}✗${NC} $script - syntax error"
-        syntax_ok=false
+        error_output=$(bash -n "$script" 2>&1)
+        echo -e "${RED}✗${NC} $script"
+        echo "  $error_output"
         failed=$((failed + 1))
     fi
 done
@@ -72,7 +70,7 @@ if [[ $failed -eq 0 ]]; then
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     exit 0
 else
-    echo -e "${RED}✗ Some tests failed${NC}"
+    echo -e "${RED}✗ Some tests failed (see details above)${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     exit 1
 fi

@@ -1,7 +1,8 @@
 #!/usr/bin/env bats
 # Unit tests for logger.sh
 
-load helpers
+# Source the helpers file
+source "$(cd "$(dirname "${BATS_TEST_FILENAME}")" && pwd)/../helpers.sh"
 
 setup() {
     setup_test_env

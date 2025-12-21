@@ -8,7 +8,7 @@ The project uses **[bats](https://github.com/bats-core/bats-core)** (Bash Automa
 
 ## Test Structure
 
-```
+```files
 tests/
 ├── helpers.sh              # Shared test utilities and setup/teardown
 ├── unit/                   # Unit tests for individual functions
@@ -53,12 +53,14 @@ brew install bats-core
 Unit tests verify individual functions in isolation.
 
 **logger.bats**:
+
 - ✅ Tests colored output functions (`log_info`, `log_success`, `log_warning`, `log_error`)
 - ✅ Tests header formatting
 - ✅ Tests file logging and timestamps
 - ✅ Tests error exit handling
 
 **deps.bats**:
+
 - ✅ Tests dependency detection (yadm, homebrew)
 - ✅ Tests configuration file parsing
 - ✅ Tests yadm binary detection across different installation paths
@@ -68,6 +70,7 @@ Unit tests verify individual functions in isolation.
 Integration tests verify components working together.
 
 **workflow.bats**:
+
 - ✅ Tests plist template placeholder replacement
 - ✅ Tests configuration file copying
 - ✅ Tests dotfiles identification from config
@@ -101,6 +104,7 @@ teardown() {
 ### Available Helper Functions
 
 **Environment Setup:**
+
 - `setup_test_env` - Create temp directories for testing
 - `teardown_test_env` - Clean up temp directories
 - `source_lib "lib.sh"` - Source library files for testing
@@ -108,6 +112,7 @@ teardown() {
 - `mock_brew` - Create mock brew command
 
 **Assertions:**
+
 - `assert_output_contains "output" "text"` - Check output contains text
 - `assert_exit_code $code 0` - Check exit code
 - `assert_file_exists "path"` - Check file exists
@@ -115,6 +120,7 @@ teardown() {
 - `assert_dir_exists "path"` - Check directory exists
 
 **Bats Built-in Assertions:**
+
 - `[ $status -eq 0 ]` - Check exit status
 - `[[ "$output" =~ "pattern" ]]` - Check output matches pattern
 - `[ -f "file" ]` - File exists
@@ -123,12 +129,14 @@ teardown() {
 ## CI/CD Integration
 
 Tests run automatically on:
+
 - **Push** to `main` or `develop` branches
 - **Pull Requests** against `main` or `develop`
 
 ### GitHub Actions Workflow
 
 The workflow (`.github/workflows/tests.yml`) runs:
+
 1. Unit tests
 2. Integration tests
 3. Shell syntax checks
@@ -191,20 +199,24 @@ teardown() {
 ## Troubleshooting
 
 **"bats not found"**
+
 ```bash
 brew install bats-core
 ```
 
 **Tests fail with "source not found"**
+
 - Ensure you're running tests from the project root
 - Check that `tests/helpers.sh` exists
 
 **Permission denied**
+
 ```bash
 chmod +x run-tests.sh
 ```
 
 **Syntax errors in shell scripts**
+
 ```bash
 bash -n lib/example.sh
 shellcheck lib/example.sh

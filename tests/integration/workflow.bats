@@ -1,7 +1,8 @@
 #!/usr/bin/env bats
 # Integration tests for installation and sync workflow
 
-load helpers
+# Source the helpers file
+source "$(cd "$(dirname "${BATS_TEST_FILENAME}")" && pwd)/../helpers.sh"
 
 setup() {
     setup_test_env
@@ -15,7 +16,7 @@ teardown() {
 
 # Test plist template substitution
 @test "plist template has required placeholders" {
-    plist_file="../config/de.sherrill.dotfiles-auto-sync.plist.template"
+    plist_file="$(cd "$(dirname "${BATS_TEST_FILENAME}")" && pwd)/../../config/de.sherrill.dotfiles-auto-sync.plist.template"
     [[ -f "$plist_file" ]]
     grep -q "{{HOME}}" "$plist_file"
     grep -q "{{DOTFILES_BACKUP_PATH}}" "$plist_file"
@@ -40,12 +41,12 @@ EOF
 
 # Test config file copying
 @test "files.conf template exists" {
-    config_template="../config/files.conf.template"
+    config_template="$(cd "$(dirname "${BATS_TEST_FILENAME}")" && pwd)/../../config/files.conf.template"
     [[ -f "$config_template" ]]
 }
 
 @test "can read files.conf template" {
-    config_template="../config/files.conf.template"
+    config_template="$(cd "$(dirname "${BATS_TEST_FILENAME}")" && pwd)/../../config/files.conf.template"
     content=$(cat "$config_template")
     [[ -n "$content" ]]
 }
