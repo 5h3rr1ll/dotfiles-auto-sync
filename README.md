@@ -1,5 +1,7 @@
 # Dotfiles Auto Sync
 
+![Dotfiles Auto Sync](assets/dotfiles-auto-sync-hero.png)
+
 **macOS-only** automated dotfiles synchronization system using LaunchAgent and yadm.
 
 ## Overview
