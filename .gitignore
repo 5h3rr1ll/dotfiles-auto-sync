@@ -1,0 +1,4 @@
+# User-specific generated configs
+config/files.conf
+config/*.plist
+!config/*.template

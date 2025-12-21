@@ -1,0 +1,42 @@
+# Dotfiles Backup Configuration
+#
+# List the files you want to automatically backup, one per line.
+# Lines starting with # are comments and will be ignored.
+# Empty lines are also ignored.
+#
+# Use absolute paths or ~ for your home directory.
+# The tilde (~) will be automatically expanded to your home directory.
+#
+# IMPORTANT: Uncomment the files you want to backup!
+# Files that don't exist will be skipped with a warning.
+
+# Shell configurations
+# ~/.zshrc
+# ~/.zprofile
+# ~/.bashrc
+# ~/.bash_profile
+
+# Terminal emulator configs
+# ~/.config/starship.toml
+# ~/.config/alacritty/alacritty.yml
+# ~/.config/kitty/kitty.conf
+# ~/.config/wezterm/wezterm.lua
+
+# Editor configs
+# ~/.vimrc
+# ~/.config/nvim/init.vim
+# ~/.config/nvim/init.lua
+
+# Git configuration
+# ~/.gitconfig
+# ~/.gitignore_global
+
+# SSH configuration
+# ~/.ssh/config
+
+# Other common dotfiles
+# ~/.tmux.conf
+# ~/.config/fish/config.fish
+# ~/.config/btop/btop.conf
+
+# Add your custom dotfiles below:

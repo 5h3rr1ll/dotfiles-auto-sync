@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>de.sherrill.dotfiles-auto-sync</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>{{DOTFILES_BACKUP_PATH}}/dotfiles-auto-sync</string>
+            <string>sync</string>
+        </array>
+        <key>StartCalendarInterval</key>
+        <dict>
+            <key>Hour</key>
+            <integer>12</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <key>WatchPaths</key>
+        <array>
+            <string>{{HOME}}/.zshrc</string>
+            <string>{{HOME}}/.zprofile</string>
+            <string>{{HOME}}/.config/starship.toml</string>
+        </array>
+        <key>KeepAlive</key>
+        <false/>
+        <key>StandardOutPath</key>
+        <string>{{HOME}}/Library/Logs/de.sherrill.dotfiles-auto-sync.log</string>
+        <key>StandardErrorPath</key>
+        <string>{{HOME}}/Library/Logs/de.sherrill.dotfiles-auto-sync_error.log</string>
+    </dict>
+</plist>

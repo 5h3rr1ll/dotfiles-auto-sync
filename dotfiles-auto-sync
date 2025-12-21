@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+# dotfiles-auto-sync - Automated dotfiles synchronization system
+# Syncs dotfiles (zsh, starship, etc.) using yadm
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSION="2.0.0"
+
+# Source logger
+source "$SCRIPT_DIR/lib/logger.sh"
+
+show_help() {
+    cat << EOF
+dotfiles-auto-sync - Automated dotfiles synchronization system
+
+Usage:
+  dotfiles-auto-sync <command> [options]
+
+Commands:
+  install       Install and configure the auto-sync system
+  sync          Sync dotfiles now (manual trigger)
+  uninstall     Remove the auto-sync system
+  status        Check sync status
+  logs          View sync logs
+  help          Show this help message
+  version       Show version
+
+Options:
+  -h, --help    Show help
+  -v, --version Show version
+
+Examples:
+  dotfiles-auto-sync install  # First-time setup
+  dotfiles-auto-sync sync     # Manually trigger a sync
+  dotfiles-auto-sync status   # Check if LaunchAgent is running
+  dotfiles-auto-sync logs     # View recent sync logs
+
+Files backed up:
+  • ~/.zshrc
+  • ~/.zprofile
+  • ~/.config/starship.toml
+
+Configuration:
+  • LaunchAgent: ~/Library/LaunchAgents/de.sherrill.dotfiles-auto-sync.plist
+  • Logs: ~/Library/Logs/de.sherrill.dotfiles-auto-sync.log
+  • Schedule: Daily at 12:00 PM + on file changes
+EOF
+}
+
+show_status() {
+    log_header "Dotfiles Auto Sync Status"
+
+    # Check if LaunchAgent is loaded
+    # Note: Capture to variable first to avoid pipefail issues with grep -q
+    local launch_list=$(launchctl list 2>/dev/null || true)
+    if echo "$launch_list" | grep -q "de.sherrill.dotfiles-auto-sync"; then
+        log_success "LaunchAgent is running"
+        echo "$launch_list" | grep "de.sherrill.dotfiles-auto-sync" | sed 's/^/  /'
+    else
+        log_warning "LaunchAgent is not running"
+        echo "  Run 'dotfiles-auto-sync install' to set it up"
+    fi
+
+    # Check if yadm is configured
+    if command -v yadm &> /dev/null; then
+        log_success "yadm is installed: $(yadm --version)"
+
+        if yadm rev-parse --git-dir &> /dev/null; then
+            log_success "yadm repository is initialized"
+
+            if yadm remote -v &> /dev/null && [[ -n $(yadm remote -v) ]]; then
+                log_success "yadm remote is configured:"
+                yadm remote -v | sed 's/^/  /'
+            else
+                log_warning "No remote configured for yadm"
+            fi
+        else
+            log_warning "yadm is not initialized"
+        fi
+    else
+        log_error "yadm is not installed"
+        echo "  Run 'dotfiles-auto-sync install' to install it"
+    fi
+
+    # Check log file
+    local log_file="$HOME/Library/Logs/de.sherrill.dotfiles-auto-sync.log"
+    if [[ -f "$log_file" ]]; then
+        log_info "Recent sync activity (last 5 lines):"
+        tail -5 "$log_file" | sed 's/^/  /'
+    else
+        log_info "No sync log file found yet"
+    fi
+}
+
+show_logs() {
+    local log_file="$HOME/Library/Logs/de.sherrill.dotfiles-auto-sync.log"
+
+    if [[ ! -f "$log_file" ]]; then
+        log_error "Log file not found: $log_file"
+        exit 1
+    fi
+
+    log_info "Showing sync logs (last 20 lines):"
+    echo ""
+    tail -20 "$log_file"
+    echo ""
+    log_info "To follow logs in real-time: tail -f $log_file"
+}
+
+# Parse command
+case "${1:-}" in
+    install)
+        shift
+        source "$SCRIPT_DIR/lib/install-core.sh"
+        run_install "$@"
+        ;;
+    sync)
+        shift
+        source "$SCRIPT_DIR/lib/backup-core.sh"
+        run_backup "$@"
+        ;;
+    uninstall)
+        shift
+        source "$SCRIPT_DIR/lib/uninstall-core.sh"
+        run_uninstall "$@"
+        ;;
+    status)
+        show_status
+        ;;
+    logs)
+        show_logs
+        ;;
+    version|--version|-v)
+        echo "dotfiles-auto-sync version $VERSION"
+        ;;
+    help|--help|-h|"")
+        show_help
+        ;;
+    *)
+        log_error "Unknown command: $1"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac
