@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install bats
+      run: |
+        brew install bats-core
+    
+    - name: Run unit tests
+      run: |
+        cd tests
+        bats unit/*.bats
+    
+    - name: Run integration tests
+      run: |
+        cd tests
+        bats integration/*.bats
+    
+    - name: Check shell script syntax
+      run: |
+        for script in lib/*.sh dotfiles-auto-sync; do
+          bash -n "$script" || exit 1
+        done
+    
+    - name: Check for shellcheck issues (optional)
+      run: |
+        brew install shellcheck
+        shellcheck lib/*.sh dotfiles-auto-sync || true
