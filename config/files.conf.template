@@ -1,13 +1,13 @@
-# Dotfiles Backup Configuration
+# Dotfiles Auto Sync
 #
-# List the files you want to automatically backup, one per line.
+# List the files you want to automatically sync, one per line.
 # Lines starting with # are comments and will be ignored.
 # Empty lines are also ignored.
 #
 # Use absolute paths or ~ for your home directory.
 # The tilde (~) will be automatically expanded to your home directory.
 #
-# IMPORTANT: Uncomment the files you want to backup!
+# IMPORTANT: Uncomment the files you want to sync!
 # Files that don't exist will be skipped with a warning.
 
 # Shell configurations
