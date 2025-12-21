@@ -96,9 +96,10 @@ teardown() {
 
 # Test error_exit function
 @test "error_exit logs to file and exits with code 1" {
+    local project_root="$(cd "$(dirname "${BATS_TEST_FILENAME}")/../.." && pwd)"
     run bash -c "
-        source tests/helpers.sh
-        source tests/../lib/logger.sh
+        source '$project_root/tests/helpers.sh'
+        source '$project_root/lib/logger.sh'
         error_exit '$TEST_LOG_DIR/test.log' 'Test error'
     "
     [ $status -eq 1 ]
