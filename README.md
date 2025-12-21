@@ -64,9 +64,22 @@ This structure follows [CLI best practices](../CLI-BEST-PRACTICES.md) with a sin
 
 ## What Gets Backed Up
 
-- `~/.zshrc` - Zsh configuration
-- `~/.zprofile` - Zsh profile
-- `~/.config/starship.toml` - Starship prompt configuration
+**By default, nothing is backed up.** You need to configure which files to backup.
+
+During installation, a configuration file is created at `config/files.conf` from the template. To enable backups:
+
+1. Edit `config/files.conf` in your dotfiles-auto-sync directory
+2. Uncomment the dotfiles you want to automatically backup
+3. Save the file - changes take effect on the next backup run
+
+The template includes common dotfiles like:
+- Shell configs (`~/.zshrc`, `~/.zprofile`, `~/.bashrc`)
+- Terminal configs (`~/.config/starship.toml`, `~/.config/alacritty/alacritty.yml`)
+- Editor configs (`~/.vimrc`, `~/.config/nvim/init.vim`)
+- Git config (`~/.gitconfig`)
+- And many more examples
+
+You can also add your own custom dotfile paths to the configuration.
 
 ## How It Works
 

@@ -117,7 +117,7 @@ show_install_summary() {
     echo ""
     echo "📋 What happens next:"
     echo "  • Your configured dotfiles are automatically backed up when modified"
-    echo "  • Automatic backup runs hourly as a safety net"
+    echo "  • Automatic backup runs daily as a safety net"
     echo "  • Logs are written to: ~/Library/Logs/de.sherrill.dotfiles-auto-sync.log"
     echo ""
     echo "🔧 Useful commands:"
