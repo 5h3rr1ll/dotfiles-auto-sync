@@ -9,11 +9,11 @@
 **Platform**: macOS only (uses LaunchAgent for background automation)
 **Git Platform**: Works with any git platform (GitHub, GitLab, Gitea, Bitbucket, self-hosted)
 
-**The key advantage**: Your dotfiles are automatically backed up to your git repository **without any manual intervention**. Every time you modify your shell configuration, the changes are instantly committed and pushed.
+**The key advantage**: Your dotfiles are automatically synced to your git repository **without any manual intervention**. Every time you modify your shell configuration, the changes are instantly committed and pushed.
 
-This system uses macOS LaunchAgent to watch your dotfiles and automatically commit/push them to a git repository managed by [yadm](https://yadm.io/) (Yet Another Dotfiles Manager).
+This system uses macOS LaunchAgent to watch your dotfiles and automatically commit and push them to a git repository managed by [yadm](https://yadm.io/) (Yet Another Dotfiles Manager).
 
-**No more forgetting to commit your dotfiles!** Changes are automatically backed up when files are modified, plus daily as a safety net.
+**No more forgetting to commit your dotfiles!** Changes are automatically synced when files are modified, plus daily as a safety net.
 
 ## Why Use This?
 
@@ -46,21 +46,19 @@ This system uses macOS LaunchAgent to watch your dotfiles and automatically comm
 
 ## Project Structure
 
-```
+```files
 dotfiles-auto-sync/
-├── dotfiles-auto-sync       # Main entry point (executable)
-├── lib/                      # Internal libraries (sourced, not executed)
+├── dotfiles-auto-sync       # Main entry point
+├── lib/                     # Internal libraries
 │   ├── logger.sh            # Colored logging functions
 │   ├── deps.sh              # Dependency checking
 │   ├── backup-core.sh       # Backup logic
 │   ├── install-core.sh      # Installation logic
 │   └── uninstall-core.sh    # Uninstallation logic
-├── config/                   # Configuration files
+├── config/                  # Configuration files
 │   └── de.sherrill.dotfiles-auto-sync.plist.template  # LaunchAgent template
 └── README.md
 ```
-
-This structure follows [CLI best practices](../CLI-BEST-PRACTICES.md) with a single entry point and hidden implementation complexity.
 
 **Note:** The LaunchAgent plist is a template with placeholders (`{{HOME}}`, `{{DOTFILES_BACKUP_PATH}}`) that are dynamically replaced during installation to create `de.sherrill.dotfiles-auto-sync.plist`. This makes the project portable - anyone can clone and use it regardless of their username or installation path.
 
@@ -75,6 +73,7 @@ During installation, a configuration file is created at `config/files.conf` from
 3. Save the file - changes take effect on the next backup run
 
 The template includes common dotfiles like:
+
 - Shell configs (`~/.zshrc`, `~/.zprofile`, `~/.bashrc`)
 - Terminal configs (`~/.config/starship.toml`, `~/.config/alacritty/alacritty.yml`)
 - Editor configs (`~/.vimrc`, `~/.config/nvim/init.vim`)
@@ -82,6 +81,8 @@ The template includes common dotfiles like:
 - And many more examples
 
 You can also add your own custom dotfile paths to the configuration.
+
+**Note:** Editing `files.conf` controls **what gets backed up** when a sync runs. To control **what triggers** automatic syncs, you also need to update `WatchPaths` in the LaunchAgent plist (see [Customization](#customization) section).
 
 ## How It Works
 
@@ -91,6 +92,7 @@ The LaunchAgent (`de.sherrill.dotfiles-auto-sync.plist`) triggers the sync in tw
 2. **Scheduled**: Runs daily at 12:00 PM (noon) as a safety net
 
 When triggered, the backup script:
+
 1. Syncs with remote repository (fetch + pull --rebase)
 2. Stashes any uncommitted changes if needed
 3. Adds the dotfiles to yadm
@@ -103,12 +105,14 @@ When triggered, the backup script:
 **Operating System**: macOS (uses LaunchAgent - not compatible with Linux/Windows)
 
 **Dependencies** (automatically installed):
+
 - **Homebrew** - macOS package manager (installer can install this)
 - **yadm** - Yet Another Dotfiles Manager (installer can install this)
 
 **Prerequisites**:
-- Git repository initialized with yadm
-- Remote repository configured for push access (any git platform)
+
+- yadm initialized (`yadm init`)
+- Remote repository configured for push access
 - SSH keys configured for your git platform (installer verifies this)
 
 ## Installation
@@ -116,6 +120,7 @@ When triggered, the backup script:
 ### Automated Installation (Recommended)
 
 The install script will:
+
 - ✓ Check and install Homebrew (if needed)
 - ✓ Check and install yadm (if needed)
 - ✓ Verify yadm is initialized and configured
@@ -208,6 +213,7 @@ dotfiles-auto-sync version    # Show version
 ```
 
 The uninstaller will:
+
 - Unload and remove the LaunchAgent
 - Optionally remove log files
 - Preserve your yadm repository and dotfiles
@@ -243,23 +249,27 @@ tail -f ~/Library/Logs/de.sherrill.dotfiles-auto-sync.log
 
 ### Common Issues
 
-**"yadm not found"**
+#### "yadm not found"
+
 - Install yadm: `brew install yadm`
 - Verify installation: `which yadm`
   - Intel Mac: `/usr/local/bin/yadm`
   - Apple Silicon: `/opt/homebrew/bin/yadm`
 
-**"Failed to push to remote repository"**
+#### "Failed to push to remote repository"
+
 - Verify yadm remote is configured: `yadm remote -v`
 - Test manual push: `yadm push`
 - Check SSH keys or authentication
 
-**LaunchAgent not triggering**
+#### "LaunchAgent not triggering"
+
 - Check if loaded: `./dotfiles-auto-sync status`
 - Verify file permissions: `ls -l dotfiles-auto-sync` (should be executable)
 - Check system logs: `log show --predicate 'subsystem == "com.apple.launchd"' --last 1h`
 
-**Merge conflicts after remote changes**
+#### "Merge conflicts after remote changes"
+
 - The sync script automatically stashes local changes before pulling
 - If conflicts occur, they'll be logged and you can resolve manually with `yadm`
 
@@ -282,23 +292,36 @@ The backup script uses the following exit codes:
 
 ### Changing Watched Files
 
-To add or remove files from automatic syncing:
+To add or remove files from automatic syncing, you need to update **both** files:
 
-1. Edit `~/Library/LaunchAgents/de.sherrill.dotfiles-auto-sync.plist`
-2. Modify the `WatchPaths` section:
+**Why both?**
 
-```xml
-<key>WatchPaths</key>
-<array>
-    <string>/Users/yourname/.zshrc</string>
-    <string>/Users/yourname/.zprofile</string>
-    <string>/Users/yourname/.config/starship.toml</string>
-    <!-- Add more paths here -->
-</array>
-```
+- `WatchPaths` (LaunchAgent plist) → **Triggers** the sync when files change
+- `files.conf` → **Defines** what gets backed up when sync runs
 
-3. Update the config file at `dotfiles-auto-sync/config/files.conf` to match
-4. Reload the LaunchAgent (see schedule customization above)
+**Steps:**
+
+1. **Add to WatchPaths** - Edit `~/Library/LaunchAgents/de.sherrill.dotfiles-auto-sync.plist`
+
+    ```xml
+    <key>WatchPaths</key>
+    <array>
+        <string>/Users/yourname/.zshrc</string>
+        <string>/Users/yourname/.zprofile</string>
+        <string>/Users/yourname/.config/starship.toml</string>
+        <!-- Add more paths here -->
+    </array>
+    ```
+
+2. **Add to files.conf** - Edit `dotfiles-auto-sync/config/files.conf` to include the same files
+3. **Reload LaunchAgent**:
+
+    ```bash
+    launchctl unload ~/Library/LaunchAgents/de.sherrill.dotfiles-auto-sync.plist
+    launchctl load ~/Library/LaunchAgents/de.sherrill.dotfiles-auto-sync.plist
+    ```
+
+**Without updating both:** Files will only be backed up during the daily scheduled sync, not immediately when changed.
 
 ### Changing Sync Schedule
 
@@ -307,58 +330,59 @@ The default schedule is **daily at 12:00 PM (noon)**. To customize:
 1. Edit `~/Library/LaunchAgents/de.sherrill.dotfiles-auto-sync.plist`
 2. Modify the `StartCalendarInterval` section:
 
-```xml
-<!-- Default: Daily at 12:00 PM (noon) -->
-<key>StartCalendarInterval</key>
-<dict>
-    <key>Hour</key>
-    <integer>12</integer>
-    <key>Minute</key>
-    <integer>0</integer>
-</dict>
-```
-
-**Common schedule examples:**
-
-```xml
-<!-- Every 6 hours -->
-<key>StartInterval</key>
-<integer>21600</integer>
-
-<!-- Daily at 9 AM -->
-<key>StartCalendarInterval</key>
-<dict>
-    <key>Hour</key>
-    <integer>9</integer>
-    <key>Minute</key>
-    <integer>0</integer>
-</dict>
-
-<!-- Multiple times per day (8 AM, 12 PM, 6 PM) -->
-<key>StartCalendarInterval</key>
-<array>
-    <dict>
-        <key>Hour</key>
-        <integer>8</integer>
-        <key>Minute</key>
-        <integer>0</integer>
-    </dict>
+    ```xml
+    <!-- Default: Daily at 12:00 PM (noon) -->
+    <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
         <integer>12</integer>
         <key>Minute</key>
         <integer>0</integer>
     </dict>
+    ```
+
+    **Common schedule examples:**
+
+    ```xml
+    <!-- Every 6 hours -->
+    <key>StartInterval</key>
+    <integer>21600</integer>
+
+    <!-- Daily at 9 AM -->
+    <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>18</integer>
+        <integer>9</integer>
         <key>Minute</key>
         <integer>0</integer>
     </dict>
-</array>
-```
+
+    <!-- Multiple times per day (8 AM, 12 PM, 6 PM) -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>8</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>12</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>18</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+    </array>
+    ```
 
 3. Reload the LaunchAgent:
+
 ```bash
 launchctl unload ~/Library/LaunchAgents/de.sherrill.dotfiles-auto-sync.plist
 launchctl load ~/Library/LaunchAgents/de.sherrill.dotfiles-auto-sync.plist
@@ -377,11 +401,8 @@ This tool follows CLI best practices:
 5. **Dependency checking** - Verifies requirements at startup
 6. **User-friendly output** - Colored logs with symbols
 
-See [CLI-BEST-PRACTICES.md](../CLI-BEST-PRACTICES.md) for more details on the design principles.
-
 ## Links
 
 - [yadm documentation](https://yadm.io/)
 - [LaunchAgent documentation](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html)
 - [LaunchControl app](https://www.soma-zone.com/LaunchControl/) - GUI for managing LaunchAgents
-- [CLI Best Practices](../CLI-BEST-PRACTICES.md) - Design principles guide
