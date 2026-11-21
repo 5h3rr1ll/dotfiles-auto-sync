@@ -29,7 +29,8 @@ load_files_to_backup() {
         exit 1
     fi
 
-    while IFS= read -r line; do
+    # "|| [[ -n $line ]]" keeps a last line that has no trailing newline
+    while IFS= read -r line || [[ -n "$line" ]]; do
         # Skip comments and empty lines
         [[ "$line" =~ ^[[:space:]]*# ]] && continue
         [[ -z "${line// /}" ]] && continue
@@ -57,6 +58,26 @@ load_files_to_backup() {
     echo "${files[@]}"
 }
 
+# Check that the yadm remote is reachable, retrying while the network comes up
+# (e.g. launchd firing during a macOS DarkWake, or captive/hotel Wi-Fi blocking port 22).
+# Tunables: DOTFILES_SYNC_NET_RETRIES (default 3), DOTFILES_SYNC_NET_DELAY seconds (default 20)
+remote_reachable() {
+    local retries="${DOTFILES_SYNC_NET_RETRIES:-3}"
+    local delay="${DOTFILES_SYNC_NET_DELAY:-20}"
+    local attempt=1
+
+    while (( attempt <= retries )); do
+        if GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -o ConnectTimeout=10 -o BatchMode=yes" \
+            "$YADM_BIN" ls-remote --heads origin >/dev/null 2>&1; then
+            return 0
+        fi
+        log_to_file_quiet "$LOG_FILE" "Remote not reachable (attempt $attempt/$retries)"
+        (( attempt < retries )) && sleep "$delay"
+        attempt=$((attempt + 1))
+    done
+    return 1
+}
+
 # Main backup function
 run_backup() {
     log_to_file "$LOG_FILE" "Starting dotfiles backup"
@@ -74,30 +95,31 @@ run_backup() {
     # Change to home directory
     cd "$HOME" || error_exit "$LOG_FILE" "Failed to change to home directory"
 
-    # Fetch and sync with remote first
-    log_to_file "$LOG_FILE" "Fetching remote changes..."
-    if ! "$YADM_BIN" fetch 2>&1 | tee -a "$LOG_FILE"; then
-        log_to_file "$LOG_FILE" "Warning: Failed to fetch remote changes (continuing anyway)"
+    # Check network/remote first; when offline we still commit locally and push next run
+    online=true
+    if ! remote_reachable; then
+        online=false
+        log_to_file "$LOG_FILE" "Remote unreachable - offline mode: committing locally, push deferred to next run"
     fi
 
-    # Check if there are uncommitted changes that would block pull
-    stashed=false
-    if ! "$YADM_BIN" diff-index --quiet HEAD -- 2>/dev/null; then
-        log_to_file "$LOG_FILE" "Stashing uncommitted changes before sync..."
-        if "$YADM_BIN" stash push -m "Auto-stash before backup sync" 2>&1 | tee -a "$LOG_FILE"; then
-            stashed=true
+    # Fetch and sync with remote first
+    if [ "$online" = true ]; then
+        log_to_file "$LOG_FILE" "Fetching remote changes..."
+        if ! "$YADM_BIN" fetch 2>&1 | tee -a "$LOG_FILE"; then
+            log_to_file "$LOG_FILE" "Warning: Failed to fetch remote changes (continuing anyway)"
         fi
     fi
 
-    # Pull with rebase to sync with remote
-    log_to_file "$LOG_FILE" "Syncing with remote repository..."
-    pull_output=$("$YADM_BIN" pull --rebase 2>&1) || true
-    echo "$pull_output" | tee -a "$LOG_FILE"
-
-    # Restore stashed changes if we stashed them
-    if [ "$stashed" = true ]; then
-        log_to_file "$LOG_FILE" "Restoring stashed changes..."
-        "$YADM_BIN" stash pop 2>&1 | tee -a "$LOG_FILE" || log_to_file "$LOG_FILE" "Warning: Failed to pop stash (may have conflicts)"
+    # Pull only when the working tree is clean. Never stash: a failed stash pop
+    # silently reverts tracked files to their last commit (lost ~/.claude/settings.json on 2026-11-20).
+    if [ "$online" = false ]; then
+        :
+    elif "$YADM_BIN" diff-index --quiet HEAD -- 2>/dev/null; then
+        log_to_file "$LOG_FILE" "Syncing with remote repository..."
+        pull_output=$("$YADM_BIN" pull --rebase 2>&1) || true
+        echo "$pull_output" | tee -a "$LOG_FILE"
+    else
+        log_to_file "$LOG_FILE" "Uncommitted changes present - skipping pull (no stash) to protect local files"
     fi
 
     # Load files from config
@@ -156,6 +178,11 @@ run_backup() {
         log_error ""
         log_to_file "$LOG_FILE" "ERROR: No remote repository configured - cannot push"
         exit 1
+    fi
+
+    if [ "$online" = false ]; then
+        log_to_file "$LOG_FILE" "Skipping push (offline) - $unpushed_commits unpushed commit(s) pending"
+        exit 0
     fi
 
     # Push to remote
